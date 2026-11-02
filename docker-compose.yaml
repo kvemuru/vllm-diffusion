@@ -1,0 +1,65 @@
+name: sd-vllm
+
+services:
+  sd-server:
+    build:
+      context: .
+      args:
+        VLLM_OMNI_VERSION: ${VLLM_OMNI_VERSION:-0.32.0}
+    image: sd-vllm:${VLLM_OMNI_VERSION:-0.32.0}
+    container_name: sd-vllm-server
+    ports:
+      - "${PORT:-8091}:${PORT:-8091}"
+    environment:
+      MODEL_ID: ${MODEL_ID:-stabilityai/stable-diffusion-xl-base-1.0}
+      HOST: 0.0.0.0
+      PORT: ${PORT:-8091}
+      TP_SIZE: ${TP_SIZE:-1}
+      VAE_USE_SLICING: ${VAE_USE_SLICING:-1}
+      VAE_USE_TILING: ${VAE_USE_TILING:-1}
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_HOME: /root/.cache/huggingface
+      HF_HUB_ENABLE_HF_TRANSFER: ${HF_HUB_ENABLE_HF_TRANSFER:-1}
+      VLLM_BIN: ${VLLM_BIN:-vllm-omni}
+      EXTRA_VLLM_ARGS: ${EXTRA_VLLM_ARGS:-}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+      - ./outputs:/app/outputs
+    # vLLM uses shared memory heavily; host IPC avoids shm-size limits.
+    ipc: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:$$PORT/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 900s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Optional Gradio UI. Start with: docker compose --profile ui up -d
+  sd-ui:
+    profiles: ["ui"]
+    image: sd-vllm:${VLLM_OMNI_VERSION:-0.32.0}
+    container_name: sd-vllm-ui
+    entrypoint: ["python3", "/app/app/gradio_app.py"]
+    ports:
+      - "${GRADIO_SERVER_PORT:-7860}:7860"
+    environment:
+      API_BASE: http://sd-server:${PORT:-8091}
+      MODEL_ID: ${MODEL_ID:-stabilityai/stable-diffusion-xl-base-1.0}
+      REQUEST_TIMEOUT: "900"
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: "7860"
+    depends_on:
+      sd-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  hf-cache:

@@ -1,0 +1,12 @@
+.env
+.hf-cache/
+.venv/
+__pycache__/
+*.py[cod]
+outputs/*
+!outputs/.gitkeep
+*.png
+*.jpg
+*.jpeg
+*.webp
+.DS_Store

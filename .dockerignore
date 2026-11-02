@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.venv
+__pycache__
+*.py[cod]
+outputs/*
+!outputs/.gitkeep
+.hf-cache
+*.png
+*.jpg
+*.jpeg
+*.webp
+readme.md

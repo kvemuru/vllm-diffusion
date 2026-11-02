@@ -1,0 +1,28 @@
+# Conda environment for a local (non-Docker) vLLM-Omni Stable Diffusion host.
+#
+#   conda env create -f environment.yml
+#   conda activate sd-vllm
+#   python -c "import torch; print(torch.__version__, torch.version.cuda)"
+#   ./scripts/start_server.sh
+#
+# The CUDA 13 wheel index is used because vLLM-Omni 0.32.0 is built against
+# CUDA 13.0 / PyTorch 2.13.0. NVIDIA driver 580.x or newer is required.
+#
+# Container deployment with Docker or Podman is the recommended path (see
+# readme.md); this file is for hosts that cannot use containers.
+name: sd-vllm
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip>=25
+  - git
+  - curl
+  - jq
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu130
+      - torch==2.13.0+cu130
+      - vllm==0.32.0
+      - vllm-omni[demo]==0.32.0
+      - pillow>=11.0
+      - huggingface-hub[hf-transfer]>=0.34
